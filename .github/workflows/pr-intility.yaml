@@ -29,6 +29,9 @@ jobs:
           fi
           echo "VERSION=${version}" >> $GITHUB_OUTPUT
   build-and-validate:
+    permissions:
+      packages: write
+      contents: read
     if: needs.set-version.outputs.version != 'nothing'
     env:
       PREFLIGHT_VERSION: 1.2.1
@@ -55,4 +58,4 @@ jobs:
           provenance: false
           context: ./operator/cilium.${{ env.VERSION }}/
           push: true
-          tags: ghcr.io/intility/olm-for-cilium-ci:${{ env.VERSION }}-${{ github.event.pull_request.head.sha }}
+          tags: ghcr.io/intility/olm-for-cilium:${{ env.VERSION }}-${{ github.event.pull_request.head.sha }}
