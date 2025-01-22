@@ -17,6 +17,9 @@ jobs:
           olm_tag=$(yq .spec.install.spec.deployments[0].spec.template.spec.containers[0].image bundles/cilium.v${VERSION#v}/manifests/cilium.clusterserviceversion.yaml | cut -d ':' -f 2)
           echo "::set-output name=OLM_TAG::${olm_tag}"
   build-and-publish:
+    permissions:
+      packages: write
+      contents: read
     if: needs.set-olm-tag.outputs.olm-tag != ''
     env:
       PREFLIGHT_VERSION: 1.2.1
