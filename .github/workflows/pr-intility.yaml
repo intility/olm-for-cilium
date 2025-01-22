@@ -1,0 +1,58 @@
+name: PR Intility
+on:
+  pull_request: {}
+
+jobs:
+  lint:
+    if: github.repository == 'intility/olm-for-cilium' && github.event_name == 'pull_request'
+    name: Lint Image Build Logic
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v1
+      - uses: docker://quay.io/cilium/image-maker:9e2e7ad1a524cf714d491945e90fe650125cd60a
+        name: Run make lint
+        with:
+          entrypoint: make
+          args: lint
+  set-version:
+    runs-on: ubuntu-20.04
+    needs: lint
+    outputs:
+      version: ${{ steps.set.outputs.VERSION }}
+    steps:
+      - id: set
+        name: Set Version
+        run: |
+          version=$(echo ${{ github.head_ref }} | rev | cut -d '/' -f 1 | rev)
+          if ! [[ $version =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+              version=nothing
+          fi
+          echo "VERSION=${version}" >> $GITHUB_OUTPUT
+  build-and-validate:
+    if: needs.set-version.outputs.version != 'nothing'
+    env:
+      PREFLIGHT_VERSION: 1.2.1
+      PFLT_DOCKERCONFIG: ~/.docker/config.json
+      VERSION: ${{ needs.set-version.outputs.version }}
+    name: Build Images and Validate Images
+    runs-on: ubuntu-20.04
+    needs: set-version
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 #v3.0.0
+      - name: Login to Quay.io
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d #v3.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push to Quay.io
+        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 #v5.0.0
+        with:
+          provenance: false
+          context: ./operator/cilium.${{ env.VERSION }}/
+          push: true
+          tags: ghcr.io/intility/olm-for-cilium-ci:${{ env.VERSION }}-${{ github.event.pull_request.head.sha }}
