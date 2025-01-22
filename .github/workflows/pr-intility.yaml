@@ -58,4 +58,4 @@ jobs:
           provenance: false
           context: ./operator/cilium.${{ env.VERSION }}/
           push: true
-          tags: ghcr.io/intility/olm-for-cilium:${{ env.VERSION }}-${{ github.event.pull_request.head.sha }}
+          tags: ghcr.io/intility/olm-for-cilium-ci:${{ env.VERSION }}-${{ github.event.pull_request.head.sha }}

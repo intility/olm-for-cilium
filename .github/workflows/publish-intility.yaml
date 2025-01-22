@@ -1,10 +1,6 @@
 name: Publish Intility
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Define version to be built and tested (example: "1.13.4")'
-        required: true
+  pull_request: {}
 
 jobs:
   set-olm-tag:
@@ -16,7 +12,7 @@ jobs:
       - id: set
         name: Set OLM Tag
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          VERSION="1.16.5"
           set -o pipefail
           olm_tag=$(yq .spec.install.spec.deployments[0].spec.template.spec.containers[0].image bundles/cilium.v${VERSION#v}/manifests/cilium.clusterserviceversion.yaml | cut -d ':' -f 2)
           echo "::set-output name=OLM_TAG::${olm_tag}"
@@ -44,6 +40,6 @@ jobs:
         uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 #v5.0.0
         with:
           provenance: false
-          context: ./operator/cilium.v${{ github.event.inputs.version }}/
+          context: ./operator/cilium.v1.16.5/
           push: true
           tags: ghcr.io/intility/olm-for-cilium:${{ env.OLM_TAG }}
